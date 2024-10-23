@@ -1,9 +1,28 @@
 
 #include "ft_traceroute.h"
 
-void	ft_traceroute_loop(int socketfd, t_argv arg)
+
+
+static void	ft_traceroute_loop(int socketfd, t_argv arg)
 {
-	
+	t_request_result	result;
+	t_request_result	result2;
+
+	result.icmp_type = 11;
+	while (result.icmp_type == 11)
+	{
+		result->time_ms = send_packet(socketfd, arg.binip, arg.first_ttl);
+		result = recieve_packet(socketfd, result->time_ms);
+		ft_print_result(1, result, NULL, arg.first_ttl);
+		result2 = result;
+		result->time_ms = send_packet(socketfd, arg.binip, arg.first_ttl);
+		result = recieve_packet(socketfd, result->time_ms);
+		ft_print_result(2, result, &result2, arg.first_ttl);
+		result2 = result;
+		result->time_ms = send_packet(socketfd, arg.binip, arg.first_ttl);
+		result = recieve_packet(socketfd, result->time_ms);
+		ft_print_result(3, result, &result2, arg.first_ttl);
+	}
 }
 
 
@@ -22,38 +41,5 @@ void	ft_traceroute(t_argv arg)
     if (bind(socketfd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
 		ft_exit(RED, "Error setting up bind!", 1, socketfd);
 	ft_traceroute_loop(socketfd, arg);
-}
-
-
-int main() {
-    int socketfd;
-    struct sockaddr_in addr;
-
-    // Créer une socket
-    socketfd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (socketfd < 0) {
-        perror("Error creating socket");
-        return 1;
-    }
-
-    // Initialiser l'adresse de réception
-    memset(&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = htonl(INADDR_ANY);  // Écouter sur toutes les interfaces
-    addr.sin_port = htons(0);  // Port 0 pour laisser le système assigner un port
-
-    // Lier la socket à l'adresse et au port
-    if (bind(socketfd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-        perror("Error binding socket");
-        close(socketfd);
-        return 1;
-    }
-
-    // Recevoir le paquet
-    receive_packet(socketfd);
-
-    // Fermer la socket
     close(socketfd);
-
-    return 0;
 }

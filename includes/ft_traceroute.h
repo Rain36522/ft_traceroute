@@ -50,14 +50,20 @@ typedef struct s_argv {
 } t_argv;
 
 typedef struct s_request_result {
-	char	ip[INET_ADDRSTRLEN];
-	double	time_ms;
+	uint32_t	binip;
+	double		time_ms;
+	int			icmp_type;
+	int			icmp_code;
+	int			result;
 } t_request_result;
 
 t_argv				parsing(int argc, char **argv);
 
-void 				send_packet(int socketfd, uint32_t binip, int ttl);
+double 				send_packet(int socketfd, uint32_t binip, int ttl);
 t_request_result 	receive_packet(int socketfd);
 
 void				ft_exit(char *color, char *str, int icode, int sockfd);
 double				get_time_ms(void);
+
+void				ft_traceroute(t_argv arg);
+void				ft_print_result(int i, t_request_result result, t_request_result *old_result, int ttl);

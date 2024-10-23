@@ -1,10 +1,11 @@
 
 #include "ft_traceroute.h"
 
-void send_packet(int socketfd, uint32_t binip, int ttl)
+double  send_packet(int socketfd, uint32_t binip, int ttl)
 {
 	struct sockaddr_in  dest_addr;
-    double              buffer;
+    double              start_time;
+
 
 	ft_bzero(&dest_addr, sizeof(struct sockaddr_in));
     dest_addr.sin_family = AF_INET;
@@ -12,31 +13,39 @@ void send_packet(int socketfd, uint32_t binip, int ttl)
     dest_addr.sin_addr.s_addr = binip;
 	if (setsockopt(socketfd, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl)) < 0)
 		ft_exit(RED, "Error generating packet!", 1, socketfd);
-    buffer = get_time_ms();
-	if (sendto(socketfd, &buffer, sizeof(buffer), 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr)) <= 0)
+    start_time = get_time_ms();
+	if (sendto(socketfd, NULL, 0, 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr)) <= 0)
         ft_exit(RED, "Error sending packet!", 1, socketfd);
+    return (start_time);
 }
 
 
 
-t_request_result receive_packet(int socketfd)
+t_request_result receive_packet(int socketfd, double start_time)
 {
-    struct sockaddr_in src_addr;
-    socklen_t addr_len = sizeof(src_addr);
-    double buffer;
-    char ip_str[INET_ADDRSTRLEN];
-    struct timeval timeout;
+    struct sockaddr_in  src_addr;
+    socklen_t           addr_len = sizeof(src_addr);
+    struct ip           *ip_header;
+    struct icmp         *icmp_header;
+    char                buffer[512];
+    struct timeval      timeout;
     t_request_result    result;
 
-    timeout.tv_sec = 3;  // 3 secondes
-    timeout.tv_usec = 0; // 0 microsecondes
+    timeout.tv_sec = 3;
+    timeout.tv_usec = 0;
     ft_bzero(&src_addr, sizeof(src_addr));
+    ft_bzero(buffer, sizeof(buffer));
+    ft_bzero(&result, sizeof(result));
     if (setsockopt(socketfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
         ft_exit(RED, "Error setting socket timeout", 1, socketfd);
     else if (recvfrom(socketfd, &buffer, sizeof(buffer), 0, (struct sockaddr *)&src_addr, &addr_len) <= 0)
-        ft_exit(RED, "Error reading packet!", 1, socketfd);
-    result.time_ms = get_time_ms() - buffer;
-    inet_ntop(AF_INET, &(src_addr.sin_addr), result.ip, INET_ADDRSTRLEN);
+        return (result);
+    result.time_ms = get_time_ms() - start_time;
+    result.result = 1;
+    ip_header = (struct ip *)buffer;
+    icmp_header = struct( icmp *)(buffer + ip_header->ip_hl * 4);
+    result.icmp_type = icmp_header->icmp_type;
+    result.icmp_code = icmp_header->icmp_code;
+    result.binip = ip_header->ip_src;
     return (result);
 }
-

@@ -1,0 +1,12 @@
+
+Dans le cas de ton code, tu envoies un paquet contenant un simple timestamp (buffer), mais le protocole de ce paquet n'est pas précisé (par exemple, si c'est du UDP ou du ICMP).
+
+Cependant, pour répondre à ta question générale :
+
+Si tu envoies un paquet UDP (ce qui semble être le cas ici vu que tu utilises sendto()), alors les routeurs intermédiaires, quand le TTL expire, renverront effectivement un message ICMP Time Exceeded.
+Une fois que ce paquet UDP atteint la destination finale (si le TTL est suffisamment élevé), tu recevras un message ICMP Port Unreachable si le port n'est pas ouvert sur le serveur distant (comportement classique d'un traceroute UDP).
+Pour que je puisse confirmer que tu recevras du ICMP en réponse, il faudrait vérifier si ce paquet est bien un paquet UDP (ce qui est probable avec ton usage de sendto() sans spécifier de type). Dans tous les cas, voici ce qui se passe :
+
+Envoi du paquet : Tu envoies un paquet vers une adresse IP donnée avec un TTL spécifié.
+TTL expire avant d'atteindre la destination : Un routeur intermédiaire répond avec un message ICMP Time Exceeded.
+Paquet atteint la destination : Si le paquet atteint la destination finale, le serveur renvoie probablement un message ICMP Port Unreachable (sauf si tu envoies des paquets ICMP à la base, auquel cas tu recevras un ICMP Echo Reply).
